@@ -66,6 +66,11 @@ app.use(authRoutes.allowedMethods());
 app.use(terminalRoutes.routes());
 app.use(terminalRoutes.allowedMethods());
 
+app.use(async (ctx) => {
+  ctx.status = 404;
+  ctx.body = { error: 'Not Found', path: ctx.path };
+});
+
 setInterval(() => {
   const cleaned = sessionManager.cleanupInactiveSessions();
   if (cleaned > 0) {

@@ -6,12 +6,12 @@ echo ""
 # 检查是否已经安装依赖
 if [ ! -d "node_modules" ]; then
     echo "📦 安装前端依赖..."
-    npm install
+    pnpm install
 fi
 
 if [ ! -d "server/node_modules" ]; then
     echo "📦 安装后端依赖..."
-    cd server && npm install && cd ..
+    cd server && pnpm install && cd ..
 fi
 
 echo ""
@@ -22,14 +22,14 @@ echo ""
 
 # 启动后端服务
 echo "1️⃣  启动后端服务 (端口 3001)..."
-osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'\" && cd server && npm run dev"'
+osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'\" && cd server && pnpm run dev"'
 
 # 等待后端启动
 sleep 3
 
 # 启动前端服务
 echo "2️⃣  启动前端服务 (端口 3000)..."
-osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'\" && npm run dev"'
+osascript -e 'tell application "Terminal" to do script "cd \"'$(pwd)'\" && pnpm run dev"'
 
 echo ""
 echo "✅ 服务启动完成！"

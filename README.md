@@ -29,22 +29,39 @@ web-terminal/
 
 ```bash
 # 前端依赖
-npm install
+pnpm install
 
 # 后端依赖
-cd server && npm install
+cd server && pnpm install
 ```
 
 ### 2. 启动服务
 
+#### 方式一：一键启动（推荐）
+
+项目提供了一键启动脚本，会自动安装依赖并启动前后端服务：
+
+**macOS / Linux:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+**Windows:**
+```bash
+start.bat
+```
+
+#### 方式二：手动启动
+
 ```bash
 # 启动后端服务器（在 server 目录）
 cd server
-npm run dev
+pnpm run dev
 
-# 启动前端开发服务器（在项目根目录）
+# 启动前端开发服务器（在项目根目录，新开终端窗口）
 cd ..
-npm run dev
+pnpm run dev
 ```
 
 ### 3. 访问应用
@@ -270,17 +287,17 @@ ALLOWED_COMMANDS=ls,pwd,cd,cat,echo,date,whoami,uname,clear,help
 ### 运行格式化
 
 ```bash
-npm run format
+pnpm run format
 ```
 
 ### 构建生产版本
 
 ```bash
 # 前端
-npm run build
+pnpm run build
 
 # 后端
-cd server && npm run build
+cd server && pnpm run build
 ```
 
 ## 🤝 贡献

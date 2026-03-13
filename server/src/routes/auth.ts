@@ -9,7 +9,9 @@ import {
   getRecentFailedAttempts,
 } from '../database/userDb';
 
-const router = new Router();
+const router = new Router({
+  prefix: '/auth'
+});
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15;
