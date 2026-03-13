@@ -45,12 +45,9 @@ export function LoginPage() {
       setError('');
 
       try {
-        const success = await login(username, password);
-        if (success) {
-          const token = useAuthStore.getState().token;
-          if (token) {
-            await initWebSocket(token);
-          }
+        const result = await login(username, password);
+        if (result && result.token) {
+          await initWebSocket(result.token);
         } else {
           setError('用户名或密码错误');
           setShake(true);

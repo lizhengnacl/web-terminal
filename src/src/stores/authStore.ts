@@ -21,8 +21,8 @@ interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  register: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ token: string; user: User } | null>;
+  register: (username: string, password: string) => Promise<{ token: string; user: User } | null>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
 
-      login: async (username: string, password: string): Promise<boolean> => {
+      login: async (username: string, password: string): Promise<{ token: string; user: User } | null> => {
         try {
           const response = await apiLogin(username, password);
           set({
@@ -42,14 +42,14 @@ export const useAuthStore = create<AuthState>()(
             token: response.token,
             user: response.user,
           });
-          return true;
+          return { token: response.token, user: response.user };
         } catch (error) {
           console.error('Login failed:', error);
-          return false;
+          return null;
         }
       },
 
-      register: async (username: string, password: string): Promise<boolean> => {
+      register: async (username: string, password: string): Promise<{ token: string; user: User } | null> => {
         try {
           const response = await apiRegister(username, password);
           set({
@@ -57,10 +57,10 @@ export const useAuthStore = create<AuthState>()(
             token: response.token,
             user: response.user,
           });
-          return true;
+          return { token: response.token, user: response.user };
         } catch (error) {
           console.error('Registration failed:', error);
-          return false;
+          return null;
         }
       },
 
