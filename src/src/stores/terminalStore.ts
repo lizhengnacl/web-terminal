@@ -34,6 +34,7 @@ interface TerminalState {
   history: HistoryItem[];
   wsClient: TerminalWebSocket | null;
   connected: boolean;
+  authenticated: boolean;
   initWebSocket: (token: string) => Promise<void>;
   createSession: () => string;
   closeSession: (id: string) => void;
@@ -55,20 +56,28 @@ export const useTerminalStore = create<TerminalState>()(
       history: [],
       wsClient: null,
       connected: false,
+      authenticated: false,
 
       initWebSocket: async (token: string) => {
+        console.log('[TerminalStore] Initializing WebSocket with token');
         const client = new TerminalWebSocket(token);
 
         client.on('*', (message) => {
+          console.log('[TerminalStore] Received message:', message);
+          
           if (message.type === 'output' && message.sessionId && message.data) {
-            set((state) => ({
-              sessions: state.sessions.map((s) =>
+            console.log('[TerminalStore] Processing output for session:', message.sessionId, 'data:', message.data);
+            set((state) => {
+              const newSessions = state.sessions.map((s) =>
                 s.id === message.sessionId ? { ...s, output: [...s.output, message.data!] } : s
-              ),
-            }));
+              );
+              console.log('[TerminalStore] Updated sessions:', newSessions);
+              return { sessions: newSessions };
+            });
           }
 
           if (message.type === 'created' && message.sessionId) {
+            console.log('[TerminalStore] Session created, setting up:', message.sessionId);
             const sessionNumber = get().sessions.length + 1;
             const newSession: TerminalSession = {
               id: message.sessionId,
@@ -82,6 +91,26 @@ export const useTerminalStore = create<TerminalState>()(
               sessions: [...state.sessions, newSession],
               activeSessionId: message.sessionId,
             }));
+          }
+
+          if (message.type === 'auth') {
+            console.log('[TerminalStore] Auth successful');
+            set({ authenticated: true });
+            
+            // 认证成功后立即创建第一个会话
+            setTimeout(() => {
+              const currentState = get();
+              console.log('[TerminalStore] Current state after auth:', {
+                sessionsLength: currentState.sessions.length,
+                hasWsClient: !!currentState.wsClient,
+                authenticated: currentState.authenticated
+              });
+              
+              if (currentState.sessions.length === 0 && currentState.wsClient) {
+                console.log('[TerminalStore] Creating first session after auth');
+                currentState.wsClient.createSession(80, 24);
+              }
+            }, 100);
           }
 
           if (message.type === 'exit' && message.sessionId) {
@@ -107,24 +136,29 @@ export const useTerminalStore = create<TerminalState>()(
 
         try {
           await client.connect();
+          console.log('[TerminalStore] WebSocket connected, setting state');
           set({ wsClient: client, connected: true });
         } catch (error) {
-          console.error('Failed to connect WebSocket:', error);
+          console.error('[TerminalStore] Failed to connect WebSocket:', error);
           throw error;
         }
       },
 
       createSession: () => {
+        console.log('[TerminalStore] createSession called');
         const { wsClient, connected } = get();
+        console.log('[TerminalStore] wsClient:', !!wsClient, 'connected:', connected);
 
         if (!wsClient || !connected) {
-          console.error('WebSocket not connected');
+          console.error('[TerminalStore] WebSocket not connected');
           return '';
         }
 
+        console.log('[TerminalStore] Calling wsClient.createSession');
         wsClient.createSession(80, 24);
 
         const tempId = generateId();
+        console.log('[TerminalStore] Returning tempId:', tempId);
         return tempId;
       },
 
@@ -207,7 +241,7 @@ export const useTerminalStore = create<TerminalState>()(
         if (wsClient) {
           wsClient.disconnect();
         }
-        set({ wsClient: null, connected: false });
+        set({ wsClient: null, connected: false, authenticated: false });
       },
     }),
     {

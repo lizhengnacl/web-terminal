@@ -76,12 +76,17 @@ export class TerminalWebSocket {
   }
 
   sendMessage(message: WebSocketMessage): void {
+    console.log('[TerminalWebSocket] Sending message:', message);
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+      console.log('[TerminalWebSocket] Message sent successfully');
+    } else {
+      console.error('[TerminalWebSocket] Cannot send message, WebSocket not open');
     }
   }
 
   createSession(cols: number = 80, rows: number = 24): void {
+    console.log('[TerminalWebSocket] Creating session with cols:', cols, 'rows:', rows);
     this.sendMessage({ type: 'create', token: this.token, cols, rows });
   }
 

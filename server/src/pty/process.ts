@@ -21,35 +21,55 @@ export class PTYProcess extends EventEmitter {
   }
 
   start(cols: number = 80, rows: number = 24): void {
+    console.log('[PTYProcess] Starting PTY process...');
+    
     if (this.pty) {
+      console.log('[PTYProcess] Killing existing PTY process');
       this.pty.kill();
     }
 
-    const shell = process.env.SHELL || '/bin/bash';
+    const shell = '/bin/sh';
+    console.log('[PTYProcess] Using shell:', shell);
+    
     const env = {
       ...process.env,
       TERM: 'xterm-256color',
       ...this.options.env,
     };
 
-    this.pty = pty.spawn(shell, [], {
-      name: 'xterm-256color',
-      cols,
-      rows,
-      cwd: this.options.cwd || process.env.HOME || '/root',
-      env,
-    });
+    const cwd = '/tmp';
+    console.log('[PTYProcess] Working directory:', cwd);
+    
+    console.log('[PTYProcess] Spawning PTY with cols:', cols, 'rows:', rows);
+    try {
+      this.pty = pty.spawn(shell, [], {
+        name: 'xterm-256color',
+        cols,
+        rows,
+        cwd,
+        env,
+      });
+      console.log('[PTYProcess] PTY spawned successfully, PID:', this.pty.pid);
 
-    this.isRunning = true;
+      this.isRunning = true;
 
-    this.pty.onData((data: string) => {
-      this.emit('data', data);
-    });
+      this.pty.onData((data: string) => {
+        console.log('[PTYProcess] onData triggered, data length:', data.length, 'data:', JSON.stringify(data));
+        this.emit('data', data);
+      });
 
-    this.pty.onExit(({ exitCode, signal }) => {
-      this.isRunning = false;
-      this.emit('exit', { exitCode, signal });
-    });
+      this.pty.onExit(({ exitCode, signal }) => {
+        console.log('[PTYProcess] PTY exited, code:', exitCode, 'signal:', signal);
+        this.isRunning = false;
+        this.emit('exit', { exitCode, signal });
+      });
+      
+      console.log('[PTYProcess] Event listeners attached');
+    } catch (error) {
+      console.error('[PTYProcess] Failed to spawn PTY:', error);
+      console.error('[PTYProcess] Error stack:', error instanceof Error ? error.stack : error);
+      throw error;
+    }
   }
 
   write(data: string): boolean {

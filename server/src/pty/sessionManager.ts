@@ -7,7 +7,10 @@ export class SessionManager {
   private userSessions: Map<string, Set<string>> = new Map();
 
   createSession(userId: string, cols: number = 80, rows: number = 24): string {
+    console.log('[SessionManager] Creating session for user:', userId);
     const sessionId = uuidv4();
+    console.log('[SessionManager] Generated session ID:', sessionId);
+    
     const ptyProcess = new PTYProcess();
 
     const session: TerminalSession = {
@@ -19,13 +22,20 @@ export class SessionManager {
     };
 
     this.sessions.set(sessionId, session);
+    console.log('[SessionManager] Session added to map, total sessions:', this.sessions.size);
 
     if (!this.userSessions.has(userId)) {
       this.userSessions.set(userId, new Set());
     }
     this.userSessions.get(userId)!.add(sessionId);
 
-    ptyProcess.start(cols, rows);
+    console.log('[SessionManager] Starting PTY process...');
+    try {
+      ptyProcess.start(cols, rows);
+      console.log('[SessionManager] PTY process started');
+    } catch (error) {
+      console.error('[SessionManager] Failed to start PTY process:', error);
+    }
 
     return sessionId;
   }

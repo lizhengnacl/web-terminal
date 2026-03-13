@@ -13,6 +13,7 @@ import './global.css';
 import { LoginPage } from './pages/LoginPage';
 import { MainPage } from './pages/MainPage';
 import { useAuthStore } from './stores/authStore';
+import { useTerminalStore } from './stores/terminalStore';
 
 // 配置 Tailwind 主题
 if (typeof window !== 'undefined' && (window as any).tailwind) {
@@ -57,11 +58,23 @@ if (typeof window !== 'undefined' && (window as any).tailwind) {
 }
 
 function App() {
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated, token, checkAuth } = useAuthStore();
+  const { connected, initWebSocket, disconnect } = useTerminalStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (isAuthenticated && token && !connected) {
+      initWebSocket(token).catch((error) => {
+        console.error('WebSocket connection failed:', error);
+      });
+    }
+    if (!isAuthenticated && connected) {
+      disconnect();
+    }
+  }, [isAuthenticated, token, connected, initWebSocket, disconnect]);
 
   return (
     <HashRouter>

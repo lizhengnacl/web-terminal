@@ -47,7 +47,14 @@ export function LoginPage() {
       try {
         const result = await login(username, password);
         if (result && result.token) {
-          await initWebSocket(result.token);
+          try {
+            await initWebSocket(result.token);
+          } catch (wsError) {
+            console.error('WebSocket initialization failed:', wsError);
+            useAuthStore.getState().logout();
+            setError('WebSocket连接失败，请刷新页面重试');
+            return;
+          }
         } else {
           setError('用户名或密码错误');
           setShake(true);

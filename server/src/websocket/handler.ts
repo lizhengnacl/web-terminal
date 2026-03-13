@@ -15,9 +15,10 @@ export class WebSocketHandler {
     const clientInfo = { userId: null, sessionIds: new Set<string>() };
     this.clientSessions.set(ws, clientInfo);
 
-    ws.on('message', (data: string) => {
+    ws.on('message', (data) => {
       try {
-        const message: WebSocketMessage = JSON.parse(data.toString());
+        const messageData = typeof data === 'string' ? data : data.toString();
+        const message: WebSocketMessage = JSON.parse(messageData);
         this.handleMessage(ws, message);
       } catch (error) {
         ws.send(JSON.stringify({ type: 'error', data: 'Invalid message format' }));
@@ -42,6 +43,8 @@ export class WebSocketHandler {
   }
 
   private handleMessage(ws: WebSocket, message: WebSocketMessage): void {
+    console.log('[WebSocketHandler] Received message:', message);
+    
     const clientInfo = this.clientSessions.get(ws);
     if (!clientInfo) {
       ws.send(JSON.stringify({ type: 'error', data: 'Client not found' }));
@@ -74,6 +77,8 @@ export class WebSocketHandler {
     message: WebSocketMessage,
     clientInfo: { userId: string | null; sessionIds: Set<string> }
   ): void {
+    console.log('[WebSocketHandler] Handling auth message');
+    
     if (!message.token) {
       ws.send(JSON.stringify({ type: 'error', data: 'Token required' }));
       ws.close();
@@ -87,6 +92,7 @@ export class WebSocketHandler {
       return;
     }
 
+    console.log('[WebSocketHandler] Auth successful for user:', payload.userId);
     clientInfo.userId = payload.userId;
     ws.send(JSON.stringify({ type: 'auth', data: 'Authentication successful' }));
   }
@@ -96,6 +102,8 @@ export class WebSocketHandler {
     message: WebSocketMessage,
     clientInfo: { userId: string | null; sessionIds: Set<string> }
   ): void {
+    console.log('[WebSocketHandler] Handling create session message');
+    
     if (!clientInfo.userId) {
       ws.send(JSON.stringify({ type: 'error', data: 'Not authenticated' }));
       return;
@@ -104,7 +112,10 @@ export class WebSocketHandler {
     const cols = message.cols || 80;
     const rows = message.rows || 24;
 
+    console.log('[WebSocketHandler] Creating session with cols:', cols, 'rows:', rows);
     const sessionId = this.sessionManager.createSession(clientInfo.userId, cols, rows);
+    console.log('[WebSocketHandler] Session created with ID:', sessionId);
+    
     const session = this.sessionManager.getSession(sessionId);
 
     if (!session) {
@@ -115,15 +126,18 @@ export class WebSocketHandler {
     clientInfo.sessionIds.add(sessionId);
 
     session.ptyProcess.on('data', (data: string) => {
+      console.log('[WebSocketHandler] Sending output data for session:', sessionId, 'data length:', data.length);
       ws.send(JSON.stringify({ type: 'output', sessionId, data }));
     });
 
     session.ptyProcess.on('exit', () => {
+      console.log('[WebSocketHandler] Session exited:', sessionId);
       ws.send(JSON.stringify({ type: 'exit', sessionId }));
       this.sessionManager.closeSession(sessionId);
       clientInfo.sessionIds.delete(sessionId);
     });
 
+    console.log('[WebSocketHandler] Sending created message with sessionId:', sessionId);
     ws.send(JSON.stringify({ type: 'created', sessionId }));
   }
 
@@ -132,26 +146,33 @@ export class WebSocketHandler {
     message: WebSocketMessage,
     clientInfo: { userId: string | null; sessionIds: Set<string> }
   ): void {
+    console.log('[WebSocketHandler] handleInput called with message:', message);
+    
     if (!clientInfo.userId) {
       ws.send(JSON.stringify({ type: 'error', data: 'Not authenticated' }));
       return;
     }
 
     if (!message.sessionId || !message.data) {
+      console.log('[WebSocketHandler] Missing sessionId or data');
       return;
     }
 
+    console.log('[WebSocketHandler] Looking for session:', message.sessionId);
     const session = this.sessionManager.getSession(message.sessionId);
     if (!session) {
+      console.log('[WebSocketHandler] Session not found');
       ws.send(JSON.stringify({ type: 'error', data: 'Session not found' }));
       return;
     }
 
     if (session.userId !== clientInfo.userId) {
+      console.log('[WebSocketHandler] Unauthorized session access');
       ws.send(JSON.stringify({ type: 'error', data: 'Unauthorized session access' }));
       return;
     }
 
+    console.log('[WebSocketHandler] Writing data to PTY:', JSON.stringify(message.data));
     session.ptyProcess.write(message.data);
     this.sessionManager.updateActivity(message.sessionId);
   }

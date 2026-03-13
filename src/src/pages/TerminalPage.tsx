@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Plus, X, ScrollText, Copy, Check } from 'lucide-react';
+import { Plus, X, ScrollText, Copy, Check, Loader2 } from 'lucide-react';
 import { useTerminalStore } from '../stores/terminalStore';
 import { ansiToHtml } from '../utils/ansi';
 
@@ -20,6 +20,8 @@ export function TerminalPage() {
     closeSession,
     setActiveSession,
     addCommandToSession,
+    connected,
+    authenticated,
   } = useTerminalStore();
 
   const [command, setCommand] = useState('');
@@ -31,10 +33,10 @@ export function TerminalPage() {
 
   // 初始化第一个会话
   useEffect(() => {
-    if (sessions.length === 0) {
+    if (sessions.length === 0 && connected) {
       createSession();
     }
-  }, [sessions.length, createSession]);
+  }, [sessions.length, connected, createSession]);
 
   // 自动滚动
   useEffect(() => {
@@ -97,9 +99,54 @@ export function TerminalPage() {
   }, [sessions, activeSessionId]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
+  
+  useEffect(() => {
+    console.log('[TerminalPage] Current state:', {
+      sessionsLength: sessions.length,
+      activeSessionId,
+      hasActiveSession: !!activeSession,
+      activeSessionOutputLength: activeSession?.output?.length || 0
+    });
+  }, [sessions, activeSessionId, activeSession]);
+
+  if (!connected) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-slate-950">
+        <Loader2 className="mb-4 h-12 w-12 animate-spin text-emerald-500" />
+        <p className="text-slate-400">正在连接服务器...</p>
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-slate-950">
+        <Loader2 className="mb-4 h-12 w-12 animate-spin text-cyan-500" />
+        <p className="text-slate-400">正在验证身份...</p>
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center bg-slate-950">
+        <Loader2 className="mb-4 h-12 w-12 animate-spin text-emerald-400" />
+        <p className="text-slate-400">正在创建终端会话...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col bg-slate-950">
+      {/* 调试信息 */}
+      <div className="flex items-center gap-2 border-b border-slate-800 bg-slate-900 px-4 py-1 text-xs text-slate-400">
+        <span>Debug: sessions={sessions.length}</span>
+        <span>activeId={activeSessionId}</span>
+        <span>connected={connected ? '✓' : '✗'}</span>
+        <span>authenticated={authenticated ? '✓' : '✗'}</span>
+        <span>outputLen={activeSession?.output?.length || 0}</span>
+      </div>
+      
       {/* 标签栏 */}
       <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-800 bg-slate-900/50 px-2 py-2">
         {sessions.map((session) => (
@@ -186,13 +233,18 @@ export function TerminalPage() {
         >
           {activeSession ? (
             activeSession.output.length > 0 ? (
-              activeSession.output.map((line, index) => (
-                <div
-                  key={index}
-                  className="break-words text-[hsl(var(--terminal-text))]"
-                  dangerouslySetInnerHTML={{ __html: ansiToHtml(line) || '&nbsp;' }}
-                />
-              ))
+              activeSession.output.map((line, index) => {
+                console.log('[TerminalPage] Rendering line', index, ':', line);
+                return (
+                  <div
+                    key={index}
+                    className="break-words text-[hsl(var(--terminal-text))]"
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {line}
+                  </div>
+                );
+              })
             ) : (
               <div className="italic text-slate-500">等待输入命令...</div>
             )
