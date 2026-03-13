@@ -8,6 +8,9 @@ export default defineConfig({
       index: './src/entry.tsx',
     },
   },
+  server: {
+    port: 3011,
+  },
   tools: {
     postcss: {
       postcssOptions: {

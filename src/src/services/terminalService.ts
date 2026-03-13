@@ -1,5 +1,5 @@
-const WS_URL = 'ws://localhost:3001';
-const API_URL = 'http://localhost:3001';
+const WS_URL = 'ws://localhost:3012';
+const API_URL = 'http://localhost:3012';
 
 export interface WebSocketMessage {
   type: string;
