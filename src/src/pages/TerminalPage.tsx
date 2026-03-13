@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Plus, X, ScrollText, Copy, Check } from 'lucide-react';
 import { useTerminalStore } from '../stores/terminalStore';
+import { ansiToHtml } from '../utils/ansi';
 
 export function TerminalPage() {
   const {
@@ -189,7 +190,7 @@ export function TerminalPage() {
                 <div
                   key={index}
                   className="break-words text-[hsl(var(--terminal-text))]"
-                  dangerouslySetInnerHTML={{ __html: line || '&nbsp;' }}
+                  dangerouslySetInnerHTML={{ __html: ansiToHtml(line) || '&nbsp;' }}
                 />
               ))
             ) : (

@@ -9,38 +9,93 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { login as apiLogin, register as apiRegister, getMe } from '../services/terminalService';
+
+interface User {
+  id: string;
+  username: string;
+  role: string;
+}
 
 interface AuthState {
   isAuthenticated: boolean;
-  login: (password: string) => Promise<boolean>;
+  token: string | null;
+  user: User | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  checkAuth: () => Promise<void>;
 }
-
-// 模拟正确的密码（实际项目中应该从服务器验证）
-const CORRECT_PASSWORD = 'admin123';
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
+      token: null,
+      user: null,
 
-      login: async (password: string): Promise<boolean> => {
-        // 模拟网络延迟
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (password === CORRECT_PASSWORD) {
-          set({ isAuthenticated: true });
+      login: async (username: string, password: string): Promise<boolean> => {
+        try {
+          const response = await apiLogin(username, password);
+          set({
+            isAuthenticated: true,
+            token: response.token,
+            user: response.user,
+          });
           return true;
+        } catch (error) {
+          console.error('Login failed:', error);
+          return false;
         }
-        return false;
+      },
+
+      register: async (username: string, password: string): Promise<boolean> => {
+        try {
+          const response = await apiRegister(username, password);
+          set({
+            isAuthenticated: true,
+            token: response.token,
+            user: response.user,
+          });
+          return true;
+        } catch (error) {
+          console.error('Registration failed:', error);
+          return false;
+        }
       },
 
       logout: () => {
-        set({ isAuthenticated: false });
+        set({
+          isAuthenticated: false,
+          token: null,
+          user: null,
+        });
+      },
+
+      checkAuth: async () => {
+        const { token } = get();
+        if (!token) return;
+
+        try {
+          const response = await getMe(token);
+          set({
+            user: response.user,
+          });
+        } catch (error) {
+          set({
+            isAuthenticated: false,
+            token: null,
+            user: null,
+          });
+        }
       },
     }),
     {
       name: 'auth-storage',
+      partialize: (state) => ({
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );
