@@ -2,7 +2,9 @@ export interface User {
   id: string;
   username: string;
   password: string;
-  role: 'admin' | 'user';
+  role: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface TerminalSession {
@@ -14,7 +16,7 @@ export interface TerminalSession {
 }
 
 export interface WebSocketMessage {
-  type: 'input' | 'output' | 'resize' | 'create' | 'close' | 'auth';
+  type: 'input' | 'output' | 'resize' | 'create' | 'close' | 'auth' | 'error' | 'created' | 'closed' | 'exit';
   sessionId?: string;
   data?: string;
   token?: string;
@@ -26,4 +28,12 @@ export interface AuthPayload {
   userId: string;
   username: string;
   role: string;
+}
+
+export interface LoginAttempt {
+  id: number;
+  username: string;
+  ipAddress: string;
+  success: boolean;
+  timestamp: number;
 }

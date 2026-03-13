@@ -7,6 +7,7 @@
  * - 配置 Tailwind 主题
  */
 
+import { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './global.css';
 import { LoginPage } from './pages/LoginPage';
@@ -56,7 +57,11 @@ if (typeof window !== 'undefined' && (window as any).tailwind) {
 }
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   return (
     <HashRouter>
